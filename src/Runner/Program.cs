@@ -9,7 +9,8 @@ namespace Runner
         static void Main(string[] args)
         {
             var model = new FirstModel();
-            Console.WriteLine(model.Fitness(Idea.NewIdea()));
+            var orchestrator = new Orchestrator(5, 20);
+            orchestrator.Run();
         }
     }
 }

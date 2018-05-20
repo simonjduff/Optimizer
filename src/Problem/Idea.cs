@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace Problem
 {
@@ -9,6 +10,8 @@ namespace Problem
 
         private static readonly (int min, int max)[] IdeaShape =
             {(1, 100), (1, 50), (1, 50), (3, 10), (1, 50), (3, 10)};
+
+        public int Size => IdeaShape.Length;
 
         public Idea(int[] values)
         {
@@ -55,6 +58,11 @@ namespace Problem
         public static implicit operator int[](Idea idea)
         {
             return idea.CloneValues();
+        }
+
+        public override string ToString()
+        {
+            return string.Join(" ", _values);
         }
     }
 }
