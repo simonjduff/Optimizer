@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.Contracts;
 using System.Linq;
 
 namespace Problem
@@ -63,6 +64,24 @@ namespace Problem
         public override string ToString()
         {
             return string.Join(" ", _values);
+        }
+
+        [Pure]
+        public Idea Nearby()
+        {
+            int[] newIdea = new int[IdeaShape.Length];
+            for (int i = 0; i < IdeaShape.Length; i++)
+            {
+                newIdea[i] = _values[i];
+                var diff = Random.Next(-1, 2);
+                var newValue = _values[i] + diff;
+                if (newValue >= IdeaShape[i].min && newValue <= IdeaShape[i].max)
+                {
+                    newIdea[i] = newValue;
+                }
+            }
+
+            return new Idea(newIdea);
         }
     }
 }

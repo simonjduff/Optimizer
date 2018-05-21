@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Threading;
 using Problem;
 using Problem.ThermalDesign.App.Models.FirstModel;
 
@@ -8,39 +9,116 @@ namespace Runner
 {
     public class Orchestrator
     {
-        private readonly GlobalSearcher[] _globals;
+        private readonly Scout[] _scouts;
+        private readonly Forager[] _foragers;
+        private readonly List<Neighbourhood> _danceFloor = new List<Neighbourhood>();
+        private static readonly object Synlock = new Object();
+        private static readonly Dictionary<Idea, double> Ideas = new Dictionary<Idea, double>(); 
+        private static readonly Dictionary<double, List<Idea>> Fitnesses = new Dictionary<double, List<Idea>>();
+        private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        private static readonly Random Random = new Random();
+        private readonly ManualResetEvent[] _syncs;
 
-        public Orchestrator(int globalSearchers, int localSearchers)
+        public Orchestrator(int scouts, int localSearchers)
         {
-            var model = new FirstModel();
-            _globals = new GlobalSearcher[globalSearchers];
-            for (int i = 0; i < globalSearchers; i++)
+            _syncs = new ManualResetEvent[scouts];
+
+            void DanceFunc(double fitness, Idea idea, int scoutId)
             {
-                _globals[i] = new GlobalSearcher(model, i.ToString());
+                var neighbourhood = new Neighbourhood(idea, fitness);
+
+                lock (Synlock)
+                {
+                    _danceFloor.Add(neighbourhood);
+                    _syncs[scoutId].Set();
+                }
+
+                Thread.Sleep((int) fitness);
+                lock (Synlock)
+                {
+                    _danceFloor.Remove(neighbourhood);
+                    _syncs[scoutId].Reset();
+                }
+            }
+
+            void ReportFunc(Idea idea, double fitness)
+            {
+                Console.WriteLine($"Reporting {idea} {fitness}");
+                lock (Synlock)
+                {
+                    if (Ideas.ContainsKey(idea))
+                    {
+                        return;
+                    }
+
+                    Ideas.Add(idea, fitness);
+                    if (!Fitnesses.ContainsKey(fitness))
+                    {
+                        Fitnesses.Add(fitness, new List<Idea>());
+                    }
+
+                    Fitnesses[fitness].Add(idea);
+                }
+            }
+
+            Neighbourhood ForagerFunc()
+            {
+                WaitHandle.WaitAny(_syncs);
+                lock (Synlock)
+                {
+                    if (!_danceFloor.Any())
+                    {
+                        return null;
+                    }
+
+                    var dancer = _danceFloor[Random.Next(0, _danceFloor.Count - 1)];
+                    return dancer;
+                }
+            }
+
+            var model = new FirstModel();
+            _scouts = new Scout[scouts];
+            for (int i = 0; i < scouts; i++)
+            {
+                _syncs[i] = new ManualResetEvent(false);
+                _scouts[i] = new Scout(model, 
+                    i,
+                    DanceFunc,
+                    ReportFunc,
+                    _cancellationTokenSource.Token);
+
+                _scouts[i].Search();
+            }
+
+            _foragers = new Forager[localSearchers];
+            for (int i = 0; i < localSearchers; i++)
+            {
+                _foragers[i] = new Forager(_cancellationTokenSource.Token, ForagerFunc, model);
+                _foragers[i].Search();
             }
         }
 
         public void Run()
         {
-            int searches = 0;
-            double delta = 0d;
-            double bestFitness = 0d;
-            Idea? bestIdea = null;
-            do
+            int counter = 0;
+            while (counter <= 10)
             {
-                var tasks = _globals.Select(g => Task.Run(() => g.Search())).ToArray();
-                Task.WaitAll(tasks);
-                var foundIdeas = tasks.Select(t => t.Result).OrderByDescending(r => r.fitness);
-                var best = foundIdeas.First();
-                if (best.fitness > bestFitness)
+                Thread.Sleep(1000);
+                lock (Synlock)
                 {
-                    delta = best.fitness - bestFitness;
-                    bestFitness = best.fitness;
-                    bestIdea = best.Idea;
-                    Console.WriteLine($"{searches++} Best {bestFitness:0} {bestIdea}");
-                }
+                    Console.WriteLine($"Fitnesses {Fitnesses.Count}");
+                    if (Fitnesses.Count == 0)
+                    {
+                        continue;
+                    }
 
-            } while (searches <= 10 && delta > 0d);
+                    var maxFitness = Fitnesses.Max(f => f.Key);
+                    Console.WriteLine($"{maxFitness} {Fitnesses[maxFitness].First()} ");
+                    counter++;
+                }
+            }
+
+            _cancellationTokenSource.Cancel();
         }
     }
 }
