@@ -38,7 +38,7 @@ namespace Runner
 
                     if (AbandonSite(idea, fitness))
                     {
-                        Console.WriteLine($"Abandoning site {_currentNeighbourhood.Output().Fitness}");
+                        Console.WriteLine($"Abandoning {_currentNeighbourhood.Output().Fitness:0.0} {idea}");
                         continue;
                     }
 
@@ -58,7 +58,6 @@ namespace Runner
         {
             if (_currentNeighbourhood.RegisterSearch(idea, fitness))
             {
-                Console.WriteLine($"Abandoning");
                 var output = _currentNeighbourhood.Output();
                 _report(output.Idea, output.Fitness);
                 var newIdea = Idea.NewIdea();

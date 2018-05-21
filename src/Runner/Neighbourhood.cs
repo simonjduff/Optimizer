@@ -17,8 +17,9 @@ namespace Runner
         }
 
         private int _attempts = 0;
-        private const int MaxAttempts = 20;
+        private const int MaxAttempts = 10;
         private readonly object _synlock = new object();
+        private Size _size = Size.Big;
 
         public Neighbourhood(Idea idea, double fitness)
         {
@@ -28,7 +29,7 @@ namespace Runner
 
         public Idea Nearby()
         {
-            return _idea.Nearby();
+            return _idea.Nearby(_size);
         }
 
         /// <summary>
@@ -45,11 +46,21 @@ namespace Runner
                 {
                     _attempts++;
 
-                    return _attempts > MaxAttempts;
+                    if (_attempts > MaxAttempts)
+                    {
+                        if (_size == Size.Small)
+                        {
+                            return true;
+                        }
+
+                        _size = Size.Small;
+                        _attempts = 0;
+                    }
+
+                    return false;
                 }
 
                 //Console.WriteLine($"{FitnessDelta(fitness):0.0}");
-
                 _idea = idea;
                 _fitness = fitness;
                 _attempts = 0;

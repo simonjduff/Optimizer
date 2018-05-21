@@ -21,14 +21,18 @@ namespace Problem
 
         public static Idea NewIdea()
         {
-            var values = new int[IdeaShape.Length];
-            for (var i = 0; i < IdeaShape.Length; i++)
+            lock (Random)
             {
-                var shape = IdeaShape[i];
-                values[i] = Random.Next(shape.min, shape.max + 1);
-            }
+                var values = new int[IdeaShape.Length];
+                for (var i = 0; i < IdeaShape.Length; i++)
+                {
+                    var shape = IdeaShape[i];
+                    values[i] = Random.Next(shape.min, shape.max + 1);
+                }
 
-            return new Idea(values);
+                Console.WriteLine($"New idea {string.Join(" ", values.Select(v => v.ToString()))}");
+                return new Idea(values);
+            }
         }
 
         public Idea Increment(int index)
@@ -67,21 +71,27 @@ namespace Problem
         }
 
         [Pure]
-        public Idea Nearby()
+        public Idea Nearby(Size size)
         {
-            int[] newIdea = new int[IdeaShape.Length];
-            for (int i = 0; i < IdeaShape.Length; i++)
+            lock (Random)
             {
-                newIdea[i] = _values[i];
-                var diff = Random.Next(-1, 2);
-                var newValue = _values[i] + diff;
-                if (newValue >= IdeaShape[i].min && newValue <= IdeaShape[i].max)
+                int[] newIdea = new int[IdeaShape.Length];
+                for (int i = 0; i < IdeaShape.Length; i++)
                 {
-                    newIdea[i] = newValue;
-                }
-            }
+                    newIdea[i] = _values[i];
 
-            return new Idea(newIdea);
+                    int diff = size == Problem.Size.Big ? Random.Next(-4, 5) : Random.Next(-1,2);
+
+
+                    var newValue = _values[i] + diff;
+                    if (newValue >= IdeaShape[i].min && newValue <= IdeaShape[i].max)
+                    {
+                        newIdea[i] = newValue;
+                    }
+                }
+
+                return new Idea(newIdea);
+            }
         }
     }
 }

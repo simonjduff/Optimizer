@@ -7,7 +7,7 @@ namespace Runner
         static void Main(string[] args)
         {
             var model = new FirstModel();
-            var orchestrator = new Orchestrator(4, 20);
+            var orchestrator = new Orchestrator(8, 40);
             orchestrator.Run();
         }
     }

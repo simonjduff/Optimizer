@@ -113,7 +113,7 @@ namespace Runner
                     }
 
                     var maxFitness = Fitnesses.Max(f => f.Key);
-                    Console.WriteLine($"{maxFitness} {Fitnesses[maxFitness].First()} ");
+                    Console.WriteLine($"{maxFitness:0.0} {Fitnesses[maxFitness].First()} ");
                     counter++;
                 }
             }
